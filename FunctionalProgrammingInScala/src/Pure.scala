@@ -168,6 +168,8 @@ object State {
   val nonNegativeInt = int map math.abs
   val double = nonNegativeInt map (_.toDouble / Int.MaxValue)
 
+  def id[S] = modify(identity[S])
+
   def unit[S, A](a: A): State[S, A] = State((a, _))
 
   def sequence[S, A](list: List[State[S, A]]): State[S, List[A]] =
@@ -199,26 +201,39 @@ case class Machine(locked: Boolean, candies: Int, coins: Int) {
 }
 
 object Machine {
+  import State._
+
   type MachineState = State[Machine, (Int, Int)]
 
   def simulateMachine(inputs: List[Input]): MachineState =
-    State.sequence(inputs map input2State).map(_.last)
+    sequence(inputs map input2State).map(_.last)
 
-  def input2State(input: Input): MachineState =
-    State { machine =>
-      if (machine.candies == 0) (machine.toPair, machine)
-      else {
-        val nextMachine =
-          (input, machine) match {
-            case (Coin, Machine(true, _, _)) => machine.insert.unlock
-            case (Coin, Machine(false, _, _)) => machine.insert
-            case (Turn, Machine(true, _, _)) => machine
-            case (Turn, Machine(false, candies, _)) if candies > 0 =>
-              machine.dispense
-            case (Turn, Machine(false, _, _)) => machine
-          }
-        (nextMachine.toPair, nextMachine)
-      }
+  def insert = modify[Machine](_.insert)
+  def unlock = modify[Machine](_.unlock)
+  def dispense = modify[Machine](_.dispense)
+
+  def input2State(input: Input) =
+    for {
+      machine <- get
+      _ <- interpret(input, machine)
+      nextMachine <- get
+    } yield (nextMachine.toPair)
+
+  def interpret(input: Input, machine: Machine) =
+    (input, machine) match {
+      case (Coin, Machine(true, _, _)) =>
+        for {
+          _ <- insert
+          _ <- unlock
+        } yield ()
+      case (Coin, Machine(false, _, _)) =>
+        insert
+      case (Turn, Machine(true, _, _)) =>
+        id[Machine]
+      case (Turn, Machine(false, candies, _)) if candies > 0 =>
+        dispense
+      case (Turn, Machine(false, _, _)) =>
+        id[Machine]
     }
 }
 
