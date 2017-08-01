@@ -43,16 +43,22 @@ object List {
       case Cons(_, tail) => Cons(newHead, tail)
     }
 
+  def take[A](list: List[A], n: Int): List[A] =
+    list match {
+      case Cons(head, tail) if n > 0 => Cons(head, take(tail, n - 1))
+      case _ => Nil
+    }
+
   def drop[A](list: List[A], n: Int): List[A] =
     list match {
       case Cons(_, tail) if n > 0 => drop(tail, n - 1)
-      case Cons(_, tail) => tail
+      case _ => list
     }
 
   def dropWhile[A](list: List[A], f: A => Boolean): List[A] =
     list match {
       case Cons(head, tail) if f(head) => dropWhile(tail, f)
-      case Cons(_, tail) => tail
+      case _ => list
     }
 
   def append[A](a1: List[A], a2: List[A]): List[A] =

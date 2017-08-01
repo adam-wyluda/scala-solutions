@@ -1,5 +1,7 @@
 package fpinscala.datastructures
 
+import scala.annotation.tailrec
+
 sealed trait Tree[+A]
 case class Leaf[A](value: A) extends Tree[A]
 case class Branch[A](left: Tree[A], right: Tree[A]) extends Tree[A]
@@ -38,6 +40,15 @@ object Tree {
       case Branch(left, right) => {
         val foldLeft = fold(left)(z)(f)
         fold(right)(foldLeft)(f)
+      }
+    }
+
+  def foldTail[A, B](tree: Tree[A])(z: B)(f: (B, A) => B): B =
+    tree match {
+      case Leaf(x) => f(z, x)
+      case Branch(left, right) => {
+        val foldLeft = foldTail(left)(z)(f)
+        foldTail(right)(foldLeft)(f)
       }
     }
 

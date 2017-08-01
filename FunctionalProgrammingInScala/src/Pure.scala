@@ -174,7 +174,7 @@ object State {
 
   def sequence[S, A](list: List[State[S, A]]): State[S, List[A]] =
     list match {
-      case h +: t => State(h.map2(sequence(t))(_ +: _).run(_))
+      case h +: t => h.map2(sequence(t))(_ +: _)
       case Nil => unit(Nil)
     }
 
@@ -214,7 +214,7 @@ object Machine {
 
   def input2State(input: Input) =
     for {
-      machine <- get
+      machine <- get[Machine]
       _ <- interpret(input, machine)
       nextMachine <- get
     } yield (nextMachine.toPair)

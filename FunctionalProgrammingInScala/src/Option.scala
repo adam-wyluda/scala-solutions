@@ -87,6 +87,22 @@ object Option {
           map2(acc, f(el))(_ :+ _))
 
   def sequence[A](a: List[Option[A]]): Option[List[A]] = traverse(a)(identity)
+
+  implicit class Ops[+A](val opt: Option[A]) extends AnyVal {
+    def toList: List[A] =
+      opt match {
+        case Some(x) => List(x)
+        case None => List.empty[A]
+      }
+  }
+
+  implicit class ScalaOption[+A](val opt: scala.Option[A]) extends AnyVal {
+    def fromStdOpt: Option[A] =
+      opt match {
+        case scala.Some(x) => Some(x)
+        case scala.None => None
+      }
+  }
 }
 
 object Options extends App {
